@@ -45,21 +45,42 @@ app.post("/api/consumos", async (req, res) => {
       return res.status(400).json({ error: "Unidad operativa no especificada" });
     }
 
-    // Obtiene el último consumo registrado para incrementar el formNumber
-    const lastConsumo = await prisma.consumoCombustible.findFirst({
-      orderBy: { formNumber: "desc" },
+    // Verifica que la unidad operativa exista en la base de datos
+    const unidadOperativa = await prisma.unidadOperativa.findUnique({
+      where: { id: unidadOperativaId },
     });
 
-    const nextFormNumber = lastConsumo ? lastConsumo.formNumber + 1 : 1;
+    if (!unidadOperativa) {
+      return res.status(404).json({ error: "Unidad operativa no encontrada" });
+    }
+
+    // Obtiene el último formNumber de la tabla FormNumber
+    let lastFormNumber = await prisma.formNumber.findFirst();
+
+    if (!lastFormNumber) {
+      lastFormNumber = await prisma.formNumber.create({
+        data: {
+          value: 1,  // Si no existe, empieza desde 1
+        },
+      });
+    }
+
+    // Calcula el siguiente número de formulario
+    const nextFormNumber = lastFormNumber.value;
+    
+    // Actualiza el número de formulario para la próxima vez
+    await prisma.formNumber.update({
+      where: { id: lastFormNumber.id },
+      data: { value: nextFormNumber + 1 },
+    });
+
     const currentDate = new Date();
 
     // Crea el nuevo registro de consumo
     const nuevoConsumo = await prisma.consumoCombustible.create({
       data: {
         unidadOperativa: {
-          connect: {
-            id: unidadOperativaId,  // Asegúrate de que el id esté aquí
-          },
+          connect: { id: unidadOperativaId },
         },
         stock: stock,
         formNumber: nextFormNumber,
@@ -71,6 +92,28 @@ app.post("/api/consumos", async (req, res) => {
   } catch (error) {
     console.error("Error al registrar consumo:", error);
     res.status(500).json({ error: "Hubo un problema al registrar el consumo" });
+  }
+});
+
+//
+app.get('/api/formNumber', async (req, res) => {
+  try {
+    // Obtener el último formNumber
+    let lastFormNumber = await prisma.formNumber.findFirst();
+
+    if (!lastFormNumber) {
+      // Si no existe, devolver 1 como el primer número de formulario
+      lastFormNumber = await prisma.formNumber.create({
+        data: {
+          value: 1,  // Si no existe, empieza desde 1
+        },
+      });
+    }
+
+    return res.json({ formNumber: lastFormNumber.value });
+  } catch (error) {
+    console.error("Error al obtener formNumber:", error);
+    res.status(500).json({ error: "Error al obtener formNumber." });
   }
 });
 

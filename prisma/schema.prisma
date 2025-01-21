@@ -31,3 +31,7 @@ model ConsumoCombustible {
 
   unidadOperativa   UnidadOperativa @relation(fields: [unidadOperativaId], references: [id])
 }
+model FormNumber {
+  id        Int  @id @default(autoincrement())
+  value     Int  // Almacena el número de formulario
+}
