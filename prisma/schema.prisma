@@ -24,13 +24,44 @@ model UnidadOperativa {
 
 model ConsumoCombustible {
   id                Int      @id @default(autoincrement())
+  ordenConsumo    String
+  clasificador    String
+  meta            String
+  combustible     String
+  cantidad        Float
+  unidad          String
+  observacion     String
   unidadOperativaId Int
   stock             Int
   formNumber        Int
   fecha             DateTime
 
   unidadOperativa   UnidadOperativa @relation(fields: [unidadOperativaId], references: [id])
+  
+  conductorId    Int?
+  conductor      Conductor? @relation(fields: [conductorId], references: [id])
+
+  solicitanteId     Int? 
+  solicitante       Solicitante? @relation(fields: [solicitanteId], references: [id])
 }
+
+model Conductor {
+  id        Int      @id @default(autoincrement())
+  nombres   String
+  apellidos String
+
+  consumos  ConsumoCombustible[]  // Relación con la tabla de consumo
+}
+
+model Solicitante {
+  id        Int      @id @default(autoincrement())
+  nombres   String
+  apellidos String
+
+  // Relación con la tabla de consumo
+  consumos  ConsumoCombustible[]
+}
+
 model FormNumber {
   id        Int  @id @default(autoincrement())
   value     Int  // Almacena el número de formulario

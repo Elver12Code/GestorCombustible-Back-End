@@ -8,6 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
 // Endpoint para obtener todas las unidades operativas
 app.get("/api/unidades", async (req, res) => {
   try {
@@ -38,7 +39,32 @@ app.post("/api/unidades", async (req, res) => {
 
 app.post("/api/consumos", async (req, res) => {
   try {
-    const { unidadOperativaId, stock } = req.body;
+    const { unidadOperativaId, stock,
+      ordenConsumo,
+      clasificador,
+      meta,
+      combustible,
+      cantidad,
+      unidad,
+      observacion,
+      conductorNombre, 
+      conductorApellido, 
+     } = req.body;
+
+    // Validar que todos los campos necesarios estén presentes
+    if (
+      !unidadOperativaId ||
+      !ordenConsumo ||
+      !clasificador ||
+      !meta ||
+      !combustible ||
+      !cantidad ||
+      !unidad ||
+      !conductorNombre || 
+      !conductorApellido
+    ) {
+      return res.status(400).json({ error: "Faltan campos obligatorios" });
+    } 
 
     // Verifica que el `unidadOperativaId` esté definido
     if (!unidadOperativaId) {
@@ -52,6 +78,11 @@ app.post("/api/consumos", async (req, res) => {
 
     if (!unidadOperativa) {
       return res.status(404).json({ error: "Unidad operativa no encontrada" });
+    }
+    
+    // Verifica si hay suficiente stock
+    if (unidadOperativa.stock < cantidad) {
+      return res.status(400).json({ error: "Stock insuficiente para este consumo" });
     }
 
     // Obtiene el último formNumber de la tabla FormNumber
@@ -73,20 +104,54 @@ app.post("/api/consumos", async (req, res) => {
       where: { id: lastFormNumber.id },
       data: { value: nextFormNumber + 1 },
     });
+    // Reducir el stock de la unidad operativa
+    const nuevoStock = unidadOperativa.stock - cantidad;
+    await prisma.unidadOperativa.update({
+      where: { id: unidadOperativaId },
+      data: { stock: nuevoStock },
+    });
 
     const currentDate = new Date();
+    // Crear o buscar al conductor por nombre y apellido
+    let conductor = await prisma.conductor.findFirst({
+      where: {
+        nombres: conductorNombre,
+        apellidos: conductorApellido
+      }
+    });
+
+    // Si el conductor no existe, lo crea
+    if (!conductor) {
+      conductor = await prisma.conductor.create({
+        data: {
+          nombres: conductorNombre,
+          apellidos: conductorApellido
+        }
+      });
+    }
 
     // Crea el nuevo registro de consumo
     const nuevoConsumo = await prisma.consumoCombustible.create({
       data: {
-        unidadOperativa: {
-          connect: { id: unidadOperativaId },
-        },
-        stock: stock,
+        ordenConsumo,
+        clasificador,
+        meta,
+        combustible,
+        cantidad: parseFloat(cantidad), // Asegurar que sea un número
+        unidad,
+        observacion,
+        stock: parseFloat(stock, nuevoStock), // Asegurar que sea un número
         formNumber: nextFormNumber,
-        fecha: currentDate,
+        fecha: new Date(), // Fecha actual
+        conductor: { connect: { id: conductor.id } }, 
+        unidadOperativa: {
+          connect: { id: unidadOperativaId }, // Relacionar con la unidad operativa
+        },
       },
     });
+    if (unidadOperativa.stock < cantidad) {
+      return res.status(400).json({ error: "Stock insuficiente para este consumo" });
+    }
 
     res.status(201).json(nuevoConsumo);
   } catch (error) {
