@@ -21,6 +21,13 @@ model UnidadOperativa {
 
   consumos    ConsumoCombustible[]
 }
+model Maquina {
+  id       Int      @id @default(autoincrement())
+  placa    String   @unique
+  tipo     String
+  nombre   String   // Puede ser una descripción o nombre de la máquina
+  consumos ConsumoCombustible[] // Relación con ConsumoCombustible
+}
 
 model ConsumoCombustible {
   id                Int      @id @default(autoincrement())
@@ -40,6 +47,9 @@ model ConsumoCombustible {
   
   conductorId    Int?
   conductor      Conductor? @relation(fields: [conductorId], references: [id])
+
+  maquinaId       Int?      // Relación con Maquina (puede ser opcional)
+  maquina         Maquina?  @relation(fields: [maquinaId], references: [id])
 
   solicitanteId     Int? 
   solicitante       Solicitante? @relation(fields: [solicitanteId], references: [id])

@@ -48,7 +48,13 @@ app.post("/api/consumos", async (req, res) => {
       unidad,
       observacion,
       conductorNombre, 
-      conductorApellido, 
+      conductorApellido,
+      placa,
+      tipo,
+      maquina,
+
+
+
      } = req.body;
 
     // Validar que todos los campos necesarios estén presentes
@@ -61,10 +67,29 @@ app.post("/api/consumos", async (req, res) => {
       !cantidad ||
       !unidad ||
       !conductorNombre || 
-      !conductorApellido
+      !conductorApellido ||
+      !maquina ||
+      !placa ||
+      !tipo 
     ) {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
-    } 
+    }
+    
+    // Verificar si la máquina ya existe
+    let maquinaExistente = await prisma.maquina.findFirst({
+      where: { placa },
+    });
+
+    if (!maquinaExistente) {
+      // Si no existe, crear una nueva máquina
+      maquinaExistente = await prisma.maquina.create({
+        data: {
+          nombre: maquina,
+          placa,
+          tipo,
+        },
+      });
+    }
 
     // Verifica que el `unidadOperativaId` esté definido
     if (!unidadOperativaId) {
@@ -140,13 +165,16 @@ app.post("/api/consumos", async (req, res) => {
         cantidad: parseFloat(cantidad), // Asegurar que sea un número
         unidad,
         observacion,
-        stock: parseFloat(stock, nuevoStock), // Asegurar que sea un número
+        stock: nuevoStock, // Asegurar que sea un número
         formNumber: nextFormNumber,
         fecha: new Date(), // Fecha actual
-        conductor: { connect: { id: conductor.id } }, 
+        conductor: { 
+          connect: { id: conductor.id } }, 
         unidadOperativa: {
           connect: { id: unidadOperativaId }, // Relacionar con la unidad operativa
         },
+        maquina: { 
+          connect: { id: maquinaExistente.id } },
       },
     });
     if (unidadOperativa.stock < cantidad) {
