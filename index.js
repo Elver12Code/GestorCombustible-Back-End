@@ -1,3 +1,4 @@
+
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const express = require("express");
@@ -37,9 +38,79 @@ app.post("/api/unidades", async (req, res) => {
   }
 });
 
+// Obtener todos los solicitantes
+app.get("/api/solicitantes", async (req, res) => {
+  try {
+    const solicitantes = await prisma.solicitante.findMany(); // Obtiene los solicitantes
+    res.json(solicitantes);
+  } catch (error) {
+    console.error("Error al obtener solicitantes:", error);
+    res.status(500).json({ error: "Error al obtener solicitantes" });
+  }
+});
+
+// Agregar un nuevo solicitante
+app.post("/api/solicitantes", async (req, res) => {
+  try {
+    const { nombres, apellidos } = req.body; // Extraemos los datos del solicitante
+
+    if (!nombres || !apellidos) {
+      return res.status(400).json({ error: "Faltan campos obligatorios" });
+    }
+
+    // Crear el nuevo solicitante
+    const nuevoSolicitante = await prisma.solicitante.create({
+      data: {
+        nombres,
+        apellidos,
+      },
+    });
+
+    res.status(201).json(nuevoSolicitante);
+  } catch (error) {
+    console.error("Error al agregar solicitante:", error);
+    res.status(500).json({ error: "Error al agregar solicitante" });
+  }
+});
+
+// Obtener todos los autorizados
+app.get("/api/autorizados", async (req, res) => {
+  try {
+    const autorizados = await prisma.autorizado.findMany(); // Obtiene los autorizados
+    res.json(autorizados);
+  } catch (error) {
+    console.error("Error al obtener autorizados:", error);
+    res.status(500).json({ error: "Error al obtener autorizados" });
+  }
+});
+
+// Agregar un nuevo autorizados
+app.post("/api/autorizados", async (req, res) => {
+  try {
+    const { nombres, apellidos } = req.body; // Extraemos los datos del solicitante
+
+    if (!nombres || !apellidos) {
+      return res.status(400).json({ error: "Faltan campos obligatorios" });
+    }
+
+    // Crear el nuevo autorizados
+    const nuevoAutorizado = await prisma.autorizado.create({
+      data: {
+        nombres,
+        apellidos,
+      },
+    });
+
+    res.status(201).json(nuevoAutorizado);
+  } catch (error) {
+    console.error("Error al agregar autorizados:", error);
+    res.status(500).json({ error: "Error al agregar autorizados" });
+  }
+});
+
 app.post("/api/consumos", async (req, res) => {
   try {
-    const { unidadOperativaId, stock,
+    const { unidadOperativaId, solicitanteId, autorizadoId, stock,
       ordenConsumo,
       clasificador,
       meta,
@@ -52,8 +123,6 @@ app.post("/api/consumos", async (req, res) => {
       placa,
       tipo,
       maquina,
-
-
 
      } = req.body;
 
@@ -70,7 +139,10 @@ app.post("/api/consumos", async (req, res) => {
       !conductorApellido ||
       !maquina ||
       !placa ||
-      !tipo 
+      !tipo ||
+      !solicitanteId ||
+      !autorizadoId
+
     ) {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
@@ -103,6 +175,34 @@ app.post("/api/consumos", async (req, res) => {
 
     if (!unidadOperativa) {
       return res.status(404).json({ error: "Unidad operativa no encontrada" });
+    }
+    
+     // Verifica que el `solicitanteId` esté definido
+     if (!solicitanteId) {
+      return res.status(400).json({ error: "solicitante no especificada" });
+    }
+
+    // Verifica que la unidad operativa exista en la base de datos
+    const solicitante = await prisma.solicitante.findUnique({
+      where: { id: solicitanteId },
+    });
+
+    if (!solicitante) {
+      return res.status(404).json({ error: "solicitante no encontrada" });
+    }
+    
+    // Verifica que el `Autorizado` esté definido
+    if (!autorizadoId) {
+      return res.status(400).json({ error: "Unidad Autorizado no especificada" });
+    }
+
+    // Verifica que Autorizado exista en la base de datos
+    const autorizado = await prisma.autorizado.findUnique({
+      where: { id: autorizadoId },
+    });
+
+    if (!autorizado) {
+      return res.status(404).json({ error: "Unidad Autorizado no encontrada" });
     }
     
     // Verifica si hay suficiente stock
@@ -172,6 +272,12 @@ app.post("/api/consumos", async (req, res) => {
           connect: { id: conductor.id } }, 
         unidadOperativa: {
           connect: { id: unidadOperativaId }, // Relacionar con la unidad operativa
+        },
+        solicitante: {
+          connect: { id: solicitanteId }, // Relacionar con la unidad operativa
+        },
+        autorizado: {
+          connect: { id: autorizadoId }, // Relacionar con la unidad operativa
         },
         maquina: { 
           connect: { id: maquinaExistente.id } },

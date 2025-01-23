@@ -53,6 +53,10 @@ model ConsumoCombustible {
 
   solicitanteId     Int? 
   solicitante       Solicitante? @relation(fields: [solicitanteId], references: [id])
+
+  autorizadoId      Int?
+  autorizado        Autorizado? @relation(fields: [autorizadoId], references: [id])
+
 }
 
 model Conductor {
@@ -64,6 +68,15 @@ model Conductor {
 }
 
 model Solicitante {
+  id        Int      @id @default(autoincrement())
+  nombres   String
+  apellidos String
+
+  // Relación con la tabla de consumo
+  consumos  ConsumoCombustible[]
+}
+
+model Autorizado {
   id        Int      @id @default(autoincrement())
   nombres   String
   apellidos String
