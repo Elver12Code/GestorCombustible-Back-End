@@ -36,6 +36,7 @@ model ConsumoCombustible {
   meta            String
   combustible     String
   cantidad        Float
+  precioUnitario  Float?
   unidad          String
   observacion     String
   unidadOperativaId Int

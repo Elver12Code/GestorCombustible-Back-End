@@ -294,6 +294,25 @@ app.post("/api/consumos", async (req, res) => {
   }
 });
 
+app.get("/api/consumos", async (req, res) => {
+  try {
+    const consumos = await prisma.consumoCombustible.findMany({
+      include: {
+        conductor: true,          // Incluye información del conductor
+        unidadOperativa: true,    // Incluye información de la unidad operativa
+        solicitante: true,        // Incluye información del solicitante
+        autorizado: true,         // Incluye información del autorizado
+        maquina: true,            // Incluye información de la máquina
+      },
+    });
+
+    res.json(consumos);
+  } catch (error) {
+    console.error("Error al obtener consumos:", error);
+    res.status(500).json({ error: "Error al obtener consumos." });
+  }
+});
+
 //
 app.get('/api/formNumber', async (req, res) => {
   try {
