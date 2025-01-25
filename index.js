@@ -24,7 +24,7 @@ app.get("/api/unidades", async (req, res) => {
 // Endpoint para agregar una nueva unidad operativa
 app.post("/api/unidades", async (req, res) => {
   try {
-    const { name, stock } = req.body;
+    const { name, stock, stockInicial } = req.body;
     const nuevaUnidad = await prisma.unidadOperativa.create({
       data: {
         name,
@@ -183,6 +183,11 @@ app.post("/api/consumos", async (req, res) => {
     if (!unidadOperativa) {
       return res.status(404).json({ error: "Unidad operativa no encontrada" });
     }
+    // Obtener el stock inicial desde el primer registro de la unidad operativa
+    const primerRegistroConsumo = await prisma.consumoCombustible.findFirst({
+      where: { unidadOperativaId },
+      orderBy: { fecha: "asc" }, // Ordenar por la fecha más antigua
+    });
     
      // Verifica que el `solicitanteId` esté definido
      if (!solicitanteId) {
@@ -211,7 +216,10 @@ app.post("/api/consumos", async (req, res) => {
     if (!autorizado) {
       return res.status(404).json({ error: "Unidad Autorizado no encontrada" });
     }
-    
+    const stockInicial = primerRegistroConsumo
+      ? primerRegistroConsumo.stockInicial // Usar el stock inicial del primer registro
+      : unidadOperativa.stock;
+
     // Verifica si hay suficiente stock
     if (unidadOperativa.stock < cantidad) {
       return res.status(400).json({ error: "Stock insuficiente para este consumo" });
@@ -282,6 +290,13 @@ app.post("/api/consumos", async (req, res) => {
       });
     }
 
+    // Actualizar el stock después del consumo
+    const stockActual = unidadOperativa.stock - cantidad;
+    await prisma.unidadOperativa.update({
+      where: { id: unidadOperativaId },
+      data: { stock: stockActual },
+    });
+
     // Crea el nuevo registro de consumo
     const nuevoConsumo = await prisma.consumoCombustible.create({
       data: {
@@ -292,8 +307,9 @@ app.post("/api/consumos", async (req, res) => {
         cantidad: parseFloat(cantidad), // Asegurar que sea un número
         unidad,
         observacion,
-        stock: unidadOperativa.stock,
-        stockActual: nuevoStockActual, // Asegurar que sea un número
+        stock: stockInicial- cantidad,
+        stockActual, // Asegurar que sea un número
+        stockInicial,
         formNumber: nextFormNumber,
         fecha: new Date(), // Fecha actual
         conductor: { 
@@ -341,7 +357,7 @@ app.get("/api/consumos", async (req, res) => {
       ...consumo,
       stockActual: consumo.stockActual,  // O el campo que refleje el stock actual
     }));
-    
+
     res.json(consumos);
   } catch (error) {
     console.error("Error al obtener consumos:", error);
