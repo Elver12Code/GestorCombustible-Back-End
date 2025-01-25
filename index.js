@@ -120,9 +120,13 @@ app.post("/api/consumos", async (req, res) => {
       observacion,
       conductorNombre, 
       conductorApellido,
+      proveedorNombres,
+      proveedorApellidos,
+      proveedorRuc,
       placa,
       tipo,
       maquina,
+      
 
      } = req.body;
 
@@ -141,7 +145,10 @@ app.post("/api/consumos", async (req, res) => {
       !placa ||
       !tipo ||
       !solicitanteId ||
-      !autorizadoId
+      !autorizadoId ||
+      !proveedorNombres ||
+      !proveedorApellidos ||
+      !proveedorRuc
 
     ) {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
@@ -229,11 +236,12 @@ app.post("/api/consumos", async (req, res) => {
       where: { id: lastFormNumber.id },
       data: { value: nextFormNumber + 1 },
     });
-    // Reducir el stock de la unidad operativa
-    const nuevoStock = unidadOperativa.stock - cantidad;
+    // Reducir el stock actual de la unidad operativa
+    const nuevoStockActual = unidadOperativa.stock - cantidad;
+
     await prisma.unidadOperativa.update({
       where: { id: unidadOperativaId },
-      data: { stock: nuevoStock },
+      data: { stock: nuevoStockActual },
     });
 
     const currentDate = new Date();
@@ -254,6 +262,25 @@ app.post("/api/consumos", async (req, res) => {
         }
       });
     }
+    // Crear o buscar al proveedor por nombre y apellido
+    let proveedor = await prisma.proveedor.findFirst({
+      where: {
+        nombres: proveedorNombres,
+        apellidos: proveedorApellidos,
+        ruc: proveedorRuc
+      }
+    });
+
+    // Si el proveedor no existe, lo crea
+    if (!proveedor) {
+      proveedor = await prisma.proveedor.create({
+        data: {
+          nombres: proveedorNombres,
+          apellidos: proveedorApellidos,
+          ruc: proveedorRuc
+        }
+      });
+    }
 
     // Crea el nuevo registro de consumo
     const nuevoConsumo = await prisma.consumoCombustible.create({
@@ -265,11 +292,14 @@ app.post("/api/consumos", async (req, res) => {
         cantidad: parseFloat(cantidad), // Asegurar que sea un número
         unidad,
         observacion,
-        stock: nuevoStock, // Asegurar que sea un número
+        stock: unidadOperativa.stock,
+        stockActual: nuevoStockActual, // Asegurar que sea un número
         formNumber: nextFormNumber,
         fecha: new Date(), // Fecha actual
         conductor: { 
           connect: { id: conductor.id } }, 
+        proveedor: { 
+          connect: { id: proveedor.id } },
         unidadOperativa: {
           connect: { id: unidadOperativaId }, // Relacionar con la unidad operativa
         },
@@ -306,6 +336,12 @@ app.get("/api/consumos", async (req, res) => {
       },
     });
 
+    // Incluye el stock actual en cada consumo, si es necesario
+    const consumosConStock = consumos.map(consumo => ({
+      ...consumo,
+      stockActual: consumo.stockActual,  // O el campo que refleje el stock actual
+    }));
+    
     res.json(consumos);
   } catch (error) {
     console.error("Error al obtener consumos:", error);

@@ -36,11 +36,11 @@ model ConsumoCombustible {
   meta            String
   combustible     String
   cantidad        Float
-  precioUnitario  Float?
   unidad          String
   observacion     String
   unidadOperativaId Int
   stock             Int
+  stockActual       Int      // Este es el stock actual que se actualizará
   formNumber        Int
   fecha             DateTime
 
@@ -48,6 +48,9 @@ model ConsumoCombustible {
   
   conductorId    Int?
   conductor      Conductor? @relation(fields: [conductorId], references: [id])
+
+  proveedorId    Int?
+  proveedor      Proveedor? @relation(fields: [proveedorId], references: [id])
 
   maquinaId       Int?      // Relación con Maquina (puede ser opcional)
   maquina         Maquina?  @relation(fields: [maquinaId], references: [id])
@@ -64,6 +67,14 @@ model Conductor {
   id        Int      @id @default(autoincrement())
   nombres   String
   apellidos String
+
+  consumos  ConsumoCombustible[]  // Relación con la tabla de consumo
+}
+model Proveedor {
+  id        Int      @id @default(autoincrement())
+  nombres   String
+  apellidos String
+  ruc       Int
 
   consumos  ConsumoCombustible[]  // Relación con la tabla de consumo
 }
