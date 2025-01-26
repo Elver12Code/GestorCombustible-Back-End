@@ -13,7 +13,14 @@ app.use(express.json());
 // Endpoint para obtener todas las unidades operativas
 app.get("/api/unidades", async (req, res) => {
   try {
-    const unidades = await prisma.unidadOperativa.findMany(); // Obtiene las unidades operativas
+    const unidades = await prisma.unidadOperativa.findMany({
+      select: {
+        id: true,
+        name: true,
+        stock: true,
+        stockInicial: true,  // Asegúrate de incluir stockInicial
+      },
+    }); // Obtiene las unidades operativas
     res.json(unidades);
   } catch (error) {
     console.error("Error al obtener unidades operativas:", error);
@@ -29,6 +36,8 @@ app.post("/api/unidades", async (req, res) => {
       data: {
         name,
         stock: Number(stock),
+        stockInicial: Number(stockInicial),  // Asegúrate de incluir stockInicial
+
       },
     });
     res.status(201).json(nuevaUnidad);
@@ -307,7 +316,7 @@ app.post("/api/consumos", async (req, res) => {
         cantidad: parseFloat(cantidad), // Asegurar que sea un número
         unidad,
         observacion,
-        stock: stockInicial- cantidad,
+        stock: stockInicial,
         stockActual, // Asegurar que sea un número
         stockInicial,
         formNumber: nextFormNumber,
@@ -329,6 +338,7 @@ app.post("/api/consumos", async (req, res) => {
           connect: { id: maquinaExistente.id } },
       },
     });
+    
     if (unidadOperativa.stock < cantidad) {
       return res.status(400).json({ error: "Stock insuficiente para este consumo" });
     }
@@ -348,7 +358,7 @@ app.get("/api/consumos", async (req, res) => {
         unidadOperativa: true,    // Incluye información de la unidad operativa
         solicitante: true,        // Incluye información del solicitante
         autorizado: true,         // Incluye información del autorizado
-        maquina: true,            // Incluye información de la máquina
+        maquina: true,  
       },
     });
 

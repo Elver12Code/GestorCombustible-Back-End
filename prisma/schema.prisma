@@ -17,7 +17,7 @@ model UnidadOperativa {
   id          Int    @id @default(autoincrement())
   name        String
   stock       Int
-  stockInicial  Int   
+  stockInicial  Int?  
   nombre      String?
 
   consumos    ConsumoCombustible[]
