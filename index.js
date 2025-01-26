@@ -262,6 +262,10 @@ app.post("/api/consumos", async (req, res) => {
     });
 
     const currentDate = new Date();
+    
+    // Formatear la fecha para eliminar la hora
+    const formattedDate = currentDate.toISOString().split('T')[0];  // Esto te dará solo 'YYYY-MM-DD'
+    
     // Crear o buscar al conductor por nombre y apellido
     let conductor = await prisma.conductor.findFirst({
       where: {
@@ -305,6 +309,7 @@ app.post("/api/consumos", async (req, res) => {
       where: { id: unidadOperativaId },
       data: { stock: stockActual },
     });
+    const fecha = new Date('2025-01-26T00:00:00.000Z');  // Construir objeto DateTime
 
     // Crea el nuevo registro de consumo
     const nuevoConsumo = await prisma.consumoCombustible.create({
@@ -320,7 +325,7 @@ app.post("/api/consumos", async (req, res) => {
         stockActual, // Asegurar que sea un número
         stockInicial,
         formNumber: nextFormNumber,
-        fecha: new Date(), // Fecha actual
+        fecha: fecha, // Fecha actual
         conductor: { 
           connect: { id: conductor.id } }, 
         proveedor: { 
@@ -394,6 +399,30 @@ app.get('/api/formNumber', async (req, res) => {
   } catch (error) {
     console.error("Error al obtener formNumber:", error);
     res.status(500).json({ error: "Error al obtener formNumber." });
+  }
+});
+// Endpoint para eliminar un consumo por ID
+app.delete("/api/consumos/:id", async (req, res) => {
+  const { id } = req.params; // Obtener el ID desde los parámetros de la URL
+  try {
+    // Verificar si el registro existe antes de intentar eliminarlo
+    const consumo = await prisma.consumoCombustible.findUnique({
+      where: { id: parseInt(id) }, // Asegúrate de convertir a número si el ID es numérico
+    });
+
+    if (!consumo) {
+      return res.status(404).json({ error: "Registro no encontrado" });
+    }
+
+    // Eliminar el registro
+    await prisma.consumoCombustible.delete({
+      where: { id: parseInt(id) },
+    });
+
+    res.status(200).json({ message: "Registro eliminado exitosamente" });
+  } catch (error) {
+    console.error("Error al eliminar el registro:", error);
+    res.status(500).json({ error: "Error al eliminar el registro" });
   }
 });
 

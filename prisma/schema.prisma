@@ -76,7 +76,7 @@ model Proveedor {
   id        Int      @id @default(autoincrement())
   nombres   String
   apellidos String
-  ruc       Int
+  ruc       String
 
   consumos  ConsumoCombustible[]  // Relación con la tabla de consumo
 }
