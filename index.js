@@ -309,7 +309,6 @@ app.post("/api/consumos", async (req, res) => {
       where: { id: unidadOperativaId },
       data: { stock: stockActual },
     });
-    const fecha = new Date('2025-01-26T00:00:00.000Z');  // Construir objeto DateTime
 
     // Crea el nuevo registro de consumo
     const nuevoConsumo = await prisma.consumoCombustible.create({
@@ -325,7 +324,7 @@ app.post("/api/consumos", async (req, res) => {
         stockActual, // Asegurar que sea un número
         stockInicial,
         formNumber: nextFormNumber,
-        fecha: fecha, // Fecha actual
+        fecha: new Date(),
         conductor: { 
           connect: { id: conductor.id } }, 
         proveedor: { 
