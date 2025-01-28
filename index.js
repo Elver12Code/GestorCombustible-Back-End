@@ -117,6 +117,8 @@ app.post("/api/autorizados", async (req, res) => {
   }
 });
 
+    // Verificar si la variable ya existe
+    let nextFormNumber = 1;
 app.post("/api/consumos", async (req, res) => {
   try {
     const { unidadOperativaId, solicitanteId, autorizadoId, stock,
@@ -310,19 +312,20 @@ app.post("/api/consumos", async (req, res) => {
       data: { stock: stockActual },
     });
 
-    // Buscar todos los formNumbers ya existentes en la base de datos
+    // Obtener el siguiente número disponible
     const formNumbers = await prisma.consumoCombustible.findMany({
       select: { formNumber: true },
       orderBy: { formNumber: 'asc' },
     });
 
-    // Encontrar el primer formNumber disponible
-    let formNumber = 1;
+
+
+    // Buscar el primer hueco en la secuencia
     for (let i = 0; i < formNumbers.length; i++) {
-      if (formNumbers[i].formNumber !== formNumber) {
+      if (formNumbers[i].formNumber !== nextFormNumber) {
         break;
       }
-      formNumber++;
+      nextFormNumber++;
     }
 
     // Crea el nuevo registro de consumo
@@ -427,39 +430,28 @@ app.delete("/api/consumos/:id", async (req, res) => {
       return res.status(404).json({ error: "Registro no encontrado" });
     }
 
-    // Obtener la unidad operativa asociada
-    const unidadOperativa = await prisma.unidadOperativa.findUnique({
-      where: { id: consumo.unidadOperativaId },
-    });
-
-    if (!unidadOperativa) {
-      return res.status(404).json({ error: "Unidad operativa no encontrada" });
-    }
-
-    // Devolver la cantidad al stock de la unidad operativa
-    const nuevoStock = unidadOperativa.stock + consumo.cantidad;
-    await prisma.unidadOperativa.update({
-      where: { id: consumo.unidadOperativaId },
-      data: { stock: nuevoStock },
-    });
+    // Obtener el formNumber del consumo que se va a eliminar
+    const formNumberToDelete = consumo.formNumber;
 
     // Eliminar el registro de consumo
     await prisma.consumoCombustible.delete({
       where: { id: parseInt(id) },
     });
 
-    // Reorganizar los formNumbers posteriores
+    // Renumerar todos los formularios posteriores
     await prisma.consumoCombustible.updateMany({
-      where: { formNumber: { gt: consumo.formNumber } },
+      where: {
+        formNumber: { gt: formNumberToDelete },
+      },
       data: {
         formNumber: {
-          decrement: 1, // Decrementa el formNumber en 1 para llenar el hueco
+          decrement: 1,
         },
       },
     });
 
     res.status(200).json({
-      message: "Registro eliminado y formNumbers reorganizados correctamente",
+      message: "Formulario eliminado y renumeración realizada",
     });
   } catch (error) {
     console.error("Error al eliminar el registro:", error);
