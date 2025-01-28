@@ -35,8 +35,8 @@ app.post("/api/unidades", async (req, res) => {
     const nuevaUnidad = await prisma.unidadOperativa.create({
       data: {
         name,
-        stock: Number(stock),
-        stockInicial: Number(stockInicial),  // Asegúrate de incluir stockInicial
+        stock: parseFloat(stock),
+        stockInicial: parseFloat(stockInicial),  // Asegúrate de incluir stockInicial
 
       },
     });
@@ -310,6 +310,21 @@ app.post("/api/consumos", async (req, res) => {
       data: { stock: stockActual },
     });
 
+    // Buscar todos los formNumbers ya existentes en la base de datos
+    const formNumbers = await prisma.consumoCombustible.findMany({
+      select: { formNumber: true },
+      orderBy: { formNumber: 'asc' },
+    });
+
+    // Encontrar el primer formNumber disponible
+    let formNumber = 1;
+    for (let i = 0; i < formNumbers.length; i++) {
+      if (formNumbers[i].formNumber !== formNumber) {
+        break;
+      }
+      formNumber++;
+    }
+
     // Crea el nuevo registro de consumo
     const nuevoConsumo = await prisma.consumoCombustible.create({
       data: {
@@ -400,31 +415,57 @@ app.get('/api/formNumber', async (req, res) => {
     res.status(500).json({ error: "Error al obtener formNumber." });
   }
 });
-// Endpoint para eliminar un consumo por ID
 app.delete("/api/consumos/:id", async (req, res) => {
-  const { id } = req.params; // Obtener el ID desde los parámetros de la URL
+  const { id } = req.params;
   try {
-    // Verificar si el registro existe antes de intentar eliminarlo
+    // Verificar si el consumo existe
     const consumo = await prisma.consumoCombustible.findUnique({
-      where: { id: parseInt(id) }, // Asegúrate de convertir a número si el ID es numérico
+      where: { id: parseInt(id) },
     });
 
     if (!consumo) {
       return res.status(404).json({ error: "Registro no encontrado" });
     }
 
-    // Eliminar el registro
+    // Obtener la unidad operativa asociada
+    const unidadOperativa = await prisma.unidadOperativa.findUnique({
+      where: { id: consumo.unidadOperativaId },
+    });
+
+    if (!unidadOperativa) {
+      return res.status(404).json({ error: "Unidad operativa no encontrada" });
+    }
+
+    // Devolver la cantidad al stock de la unidad operativa
+    const nuevoStock = unidadOperativa.stock + consumo.cantidad;
+    await prisma.unidadOperativa.update({
+      where: { id: consumo.unidadOperativaId },
+      data: { stock: nuevoStock },
+    });
+
+    // Eliminar el registro de consumo
     await prisma.consumoCombustible.delete({
       where: { id: parseInt(id) },
     });
 
-    res.status(200).json({ message: "Registro eliminado exitosamente" });
+    // Reorganizar los formNumbers posteriores
+    await prisma.consumoCombustible.updateMany({
+      where: { formNumber: { gt: consumo.formNumber } },
+      data: {
+        formNumber: {
+          decrement: 1, // Decrementa el formNumber en 1 para llenar el hueco
+        },
+      },
+    });
+
+    res.status(200).json({
+      message: "Registro eliminado y formNumbers reorganizados correctamente",
+    });
   } catch (error) {
     console.error("Error al eliminar el registro:", error);
     res.status(500).json({ error: "Error al eliminar el registro" });
   }
 });
-
 
 
 // Inicializa el servidor

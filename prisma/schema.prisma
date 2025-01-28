@@ -16,8 +16,8 @@ datasource db {
 model UnidadOperativa {
   id          Int    @id @default(autoincrement())
   name        String
-  stock       Int
-  stockInicial  Int?  
+  stock       Float
+  stockInicial  Float 
   nombre      String?
 
   consumos    ConsumoCombustible[]
@@ -40,9 +40,9 @@ model ConsumoCombustible {
   unidad          String
   observacion     String
   unidadOperativaId Int
-  stock             Int
-  stockActual       Int      // Este es el stock actual que se actualizará
-  stockInicial      Int
+  stock             Float
+  stockActual       Float    // Este es el stock actual que se actualizará
+  stockInicial      Float
   formNumber        Int
   fecha             DateTime
 
