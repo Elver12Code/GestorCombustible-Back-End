@@ -324,6 +324,7 @@ app.post("/api/consumos", async (req, res) => {
       }
       formNumber++;
     }
+    const fechaISO = new Date(req.body.fecha).toISOString(); // Convierte a formato correcto
 
     // Crea el nuevo registro de consumo
     const nuevoConsumo = await prisma.consumoCombustible.create({
@@ -339,7 +340,7 @@ app.post("/api/consumos", async (req, res) => {
         stockActual, // Asegurar que sea un número
         stockInicial,
         formNumber: nextFormNumber,
-        fecha,
+        fecha: fechaISO, // Usa la fecha convertida
         conductor: { 
           connect: { id: conductor.id } }, 
         proveedor: { 
