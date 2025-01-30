@@ -3,7 +3,6 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const express = require("express");
 const cors = require("cors");
-
 const app = express();
 
 app.use(cors());
@@ -18,9 +17,9 @@ app.get("/api/unidades", async (req, res) => {
         id: true,
         name: true,
         stock: true,
-        stockInicial: true,  // Asegúrate de incluir stockInicial
+        stockInicial: true,  
       },
-    }); // Obtiene las unidades operativas
+    }); 
     res.json(unidades);
   } catch (error) {
     console.error("Error al obtener unidades operativas:", error);
@@ -36,7 +35,7 @@ app.post("/api/unidades", async (req, res) => {
       data: {
         name,
         stock: parseFloat(stock),
-        stockInicial: parseFloat(stockInicial),  // Asegúrate de incluir stockInicial
+        stockInicial: parseFloat(stockInicial),  
 
       },
     });
@@ -50,7 +49,7 @@ app.post("/api/unidades", async (req, res) => {
 // Obtener todos los solicitantes
 app.get("/api/solicitantes", async (req, res) => {
   try {
-    const solicitantes = await prisma.solicitante.findMany(); // Obtiene los solicitantes
+    const solicitantes = await prisma.solicitante.findMany(); 
     res.json(solicitantes);
   } catch (error) {
     console.error("Error al obtener solicitantes:", error);
@@ -61,20 +60,17 @@ app.get("/api/solicitantes", async (req, res) => {
 // Agregar un nuevo solicitante
 app.post("/api/solicitantes", async (req, res) => {
   try {
-    const { nombres, apellidos } = req.body; // Extraemos los datos del solicitante
+    const { nombres, apellidos } = req.body; 
 
     if (!nombres || !apellidos) {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
-
-    // Crear el nuevo solicitante
     const nuevoSolicitante = await prisma.solicitante.create({
       data: {
         nombres,
         apellidos,
       },
     });
-
     res.status(201).json(nuevoSolicitante);
   } catch (error) {
     console.error("Error al agregar solicitante:", error);
@@ -85,7 +81,7 @@ app.post("/api/solicitantes", async (req, res) => {
 // Obtener todos los autorizados
 app.get("/api/autorizados", async (req, res) => {
   try {
-    const autorizados = await prisma.autorizado.findMany(); // Obtiene los autorizados
+    const autorizados = await prisma.autorizado.findMany(); 
     res.json(autorizados);
   } catch (error) {
     console.error("Error al obtener autorizados:", error);
@@ -96,20 +92,17 @@ app.get("/api/autorizados", async (req, res) => {
 // Agregar un nuevo autorizados
 app.post("/api/autorizados", async (req, res) => {
   try {
-    const { nombres, apellidos } = req.body; // Extraemos los datos del solicitante
+    const { nombres, apellidos } = req.body; 
 
     if (!nombres || !apellidos) {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
-
-    // Crear el nuevo autorizados
     const nuevoAutorizado = await prisma.autorizado.create({
       data: {
         nombres,
         apellidos,
       },
     });
-
     res.status(201).json(nuevoAutorizado);
   } catch (error) {
     console.error("Error al agregar autorizados:", error);
@@ -136,8 +129,6 @@ app.post("/api/consumos", async (req, res) => {
       tipo,
       maquina,
       fecha,
-      
-
      } = req.body;
 
     // Validar que todos los campos necesarios estén presentes
@@ -170,7 +161,6 @@ app.post("/api/consumos", async (req, res) => {
     });
 
     if (!maquinaExistente) {
-      // Si no existe, crear una nueva máquina
       maquinaExistente = await prisma.maquina.create({
         data: {
           nombre: maquina,
@@ -179,7 +169,6 @@ app.post("/api/consumos", async (req, res) => {
         },
       });
     }
-
     // Verifica que el `unidadOperativaId` esté definido
     if (!unidadOperativaId) {
       return res.status(400).json({ error: "Unidad operativa no especificada" });
@@ -196,7 +185,7 @@ app.post("/api/consumos", async (req, res) => {
     // Obtener el stock inicial desde el primer registro de la unidad operativa
     const primerRegistroConsumo = await prisma.consumoCombustible.findFirst({
       where: { unidadOperativaId },
-      orderBy: { fecha: "asc" }, // Ordenar por la fecha más antigua
+      orderBy: { fecha: "asc" }, 
     });
     
      // Verifica que el `solicitanteId` esté definido
@@ -227,7 +216,7 @@ app.post("/api/consumos", async (req, res) => {
       return res.status(404).json({ error: "Unidad Autorizado no encontrada" });
     }
     const stockInicial = primerRegistroConsumo
-      ? primerRegistroConsumo.stockInicial // Usar el stock inicial del primer registro
+      ? primerRegistroConsumo.stockInicial 
       : unidadOperativa.stock;
 
     // Verifica si hay suficiente stock
@@ -241,7 +230,7 @@ app.post("/api/consumos", async (req, res) => {
     if (!lastFormNumber) {
       lastFormNumber = await prisma.formNumber.create({
         data: {
-          value: 1,  // Si no existe, empieza desde 1
+          value: 1,  
         },
       });
     }
@@ -249,7 +238,6 @@ app.post("/api/consumos", async (req, res) => {
     // Calcula el siguiente número de formulario
     const nextFormNumber = lastFormNumber.value;
     
-    // Actualiza el número de formulario para la próxima vez
     await prisma.formNumber.update({
       where: { id: lastFormNumber.id },
       data: { value: nextFormNumber + 1 },
@@ -266,7 +254,7 @@ app.post("/api/consumos", async (req, res) => {
     const currentDate = new Date();
     
     // Formatear la fecha para eliminar la hora
-    const formattedDate = currentDate.toISOString().split('T')[0];  // Esto te dará solo 'YYYY-MM-DD'
+    const formattedDate = currentDate.toISOString().split('T')[0];  
     
     // Crear o buscar al conductor por nombre y apellido
     let conductor = await prisma.conductor.findFirst({
@@ -324,7 +312,7 @@ app.post("/api/consumos", async (req, res) => {
       }
       formNumber++;
     }
-    const fechaISO = new Date(req.body.fecha).toISOString(); // Convierte a formato correcto
+    const fechaISO = new Date(req.body.fecha).toISOString(); 
 
     // Crea el nuevo registro de consumo
     const nuevoConsumo = await prisma.consumoCombustible.create({
@@ -333,26 +321,26 @@ app.post("/api/consumos", async (req, res) => {
         clasificador,
         meta,
         combustible,
-        cantidad: parseFloat(cantidad), // Asegurar que sea un número
+        cantidad: parseFloat(cantidad), 
         unidad,
         observacion,
         stock: stockInicial,
-        stockActual, // Asegurar que sea un número
+        stockActual, 
         stockInicial,
         formNumber: nextFormNumber,
-        fecha: fechaISO, // Usa la fecha convertida
+        fecha: fechaISO, 
         conductor: { 
           connect: { id: conductor.id } }, 
         proveedor: { 
           connect: { id: proveedor.id } },
         unidadOperativa: {
-          connect: { id: unidadOperativaId }, // Relacionar con la unidad operativa
+          connect: { id: unidadOperativaId }, 
         },
         solicitante: {
-          connect: { id: solicitanteId }, // Relacionar con la unidad operativa
+          connect: { id: solicitanteId }, 
         },
         autorizado: {
-          connect: { id: autorizadoId }, // Relacionar con la unidad operativa
+          connect: { id: autorizadoId }, 
         },
         maquina: { 
           connect: { id: maquinaExistente.id } },
@@ -374,10 +362,10 @@ app.get("/api/consumos", async (req, res) => {
   try {
     const consumos = await prisma.consumoCombustible.findMany({
       include: {
-        conductor: true,          // Incluye información del conductor
-        unidadOperativa: true,    // Incluye información de la unidad operativa
-        solicitante: true,        // Incluye información del solicitante
-        autorizado: true,         // Incluye información del autorizado
+        conductor: true,          
+        unidadOperativa: true,    
+        solicitante: true,        
+        autorizado: true,         
         maquina: true,  
       },
     });
@@ -385,7 +373,7 @@ app.get("/api/consumos", async (req, res) => {
     // Incluye el stock actual en cada consumo, si es necesario
     const consumosConStock = consumos.map(consumo => ({
       ...consumo,
-      stockActual: consumo.stockActual,  // O el campo que refleje el stock actual
+      stockActual: consumo.stockActual,  
     }));
 
     res.json(consumos);
@@ -398,14 +386,12 @@ app.get("/api/consumos", async (req, res) => {
 //
 app.get('/api/formNumber', async (req, res) => {
   try {
-    // Obtener el último formNumber
     let lastFormNumber = await prisma.formNumber.findFirst();
 
     if (!lastFormNumber) {
-      // Si no existe, devolver 1 como el primer número de formulario
       lastFormNumber = await prisma.formNumber.create({
         data: {
-          value: 1,  // Si no existe, empieza desde 1
+          value: 1,  
         },
       });
     }
@@ -417,11 +403,10 @@ app.get('/api/formNumber', async (req, res) => {
   }
 });
 app.delete("/api/consumos/:id", async (req, res) => {
-  const { id } = req.params; // Obtener el ID desde los parámetros de la URL
+  const { id } = req.params; 
   try {
-    // Verificar si el registro existe antes de intentar eliminarlo
     const consumo = await prisma.consumoCombustible.findUnique({
-      where: { id: parseInt(id) }, // Convertir a número si el ID es numérico
+      where: { id: parseInt(id) }, 
     });
 
     if (!consumo) {
@@ -437,9 +422,7 @@ app.delete("/api/consumos/:id", async (req, res) => {
       return res.status(404).json({ error: "Unidad operativa no encontrada" });
     }
 
-    // Usar una transacción para garantizar consistencia
     await prisma.$transaction(async (prisma) => {
-      // Devolver la cantidad al stock de la unidad operativa
       const nuevoStock = unidadOperativa.stock + consumo.cantidad;
       await prisma.unidadOperativa.update({
         where: { id: consumo.unidadOperativaId },
@@ -456,14 +439,13 @@ app.delete("/api/consumos/:id", async (req, res) => {
         where: { formNumber: { gt: consumo.formNumber } },
         data: {
           formNumber: {
-            decrement: 1, // Decrementar el formNumber en 1
+            decrement: 1, 
           },
         },
       });
-
       // Reajustar el valor del formNumber
       const consumosRestantes = await prisma.consumoCombustible.findMany({
-        orderBy: { formNumber: 'asc' }, // Ordenar por formNumber
+        orderBy: { formNumber: 'asc' }, 
       });
 
       // Asignar el siguiente valor correcto al formNumber
@@ -481,13 +463,13 @@ app.delete("/api/consumos/:id", async (req, res) => {
 
         // Actualiza el valor global de formNumber
         await prisma.formNumber.update({
-          where: { id: 1 }, // Asumiendo que solo hay un registro en la tabla formNumber
+          where: { id: 1 }, 
           data: { value: nextFormNumber },
         });
       } else {
         // Si no hay registros restantes, resetear formNumber a 1
         await prisma.formNumber.update({
-          where: { id: 1 }, // Asumiendo que solo hay un registro en la tabla formNumber
+          where: { id: 1 }, 
           data: { value: 1 },
         });
       }
@@ -501,7 +483,6 @@ app.delete("/api/consumos/:id", async (req, res) => {
     res.status(500).json({ error: "Error al eliminar el registro" });
   }
 });
-
 
 // Inicializa el servidor
 const PORT = process.env.PORT || 3000;
