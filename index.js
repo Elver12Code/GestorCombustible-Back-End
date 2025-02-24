@@ -489,19 +489,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en el puerto ${PORT}`);
 });
-
-
-/* // Configuración de CORS para permitir acceso desde cualquier origen
-app.use(cors({
-  origin: "*", // Permitir solicitudes de cualquier origen
-  methods: ["GET", "POST", "DELETE"],
-  allowedHeaders: ["Content-Type"],
-}));
-app.use(express.json());
-
-
-// Inicializa el servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor ejecutándose en el puerto ${PORT}`);
-});*/
