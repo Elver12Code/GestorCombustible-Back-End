@@ -17,7 +17,8 @@ app.get("/api/unidades", async (req, res) => {
         id: true,
         name: true,
         stock: true,
-        stockInicial: true,  
+        stockInicial: true, 
+        fuelType: true, 
       },
     }); 
     res.json(unidades);
@@ -30,13 +31,13 @@ app.get("/api/unidades", async (req, res) => {
 // Endpoint para agregar una nueva unidad operativa
 app.post("/api/unidades", async (req, res) => {
   try {
-    const { name, stock, stockInicial } = req.body;
+    const { name, stock, stockInicial, fuelType } = req.body;
     const nuevaUnidad = await prisma.unidadOperativa.create({
       data: {
         name,
         stock: parseFloat(stock),
         stockInicial: parseFloat(stockInicial),  
-
+        fuelType,
       },
     });
     res.status(201).json(nuevaUnidad);

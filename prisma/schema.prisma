@@ -19,6 +19,7 @@ model UnidadOperativa {
   stock       Float
   stockInicial  Float 
   nombre      String?
+  fuelType      String?
 
   consumos    ConsumoCombustible[]
 }
