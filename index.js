@@ -477,7 +477,7 @@ app.delete("/api/consumos/:id", async (req, res) => {
     });
 
     res.status(200).json({
-      message: "Registro eliminado exitosamente, stock actualizado, y formNumbers reorganizados",
+      message: "Los registros eliminaron exitosamente, stock actualizado, y formNumbers reorganizados",
     });
   } catch (error) {
     console.error("Error al eliminar el registro:", error);
